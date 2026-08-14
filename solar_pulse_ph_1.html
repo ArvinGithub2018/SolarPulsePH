@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Solar Pulse PH — Solar & Battery Sizing Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#152621;
+    --paper:#f1f6f2;
+    --card:#ffffff;
+    --line:#dbe6df;
+    --muted:#5f6f6a;
+    --gold:#f2a33d;
+    --gold-soft:#fdf1de;
+    --teal:#1f6f5c;
+    --teal-soft:#e6f3ee;
+    --coral:#e25a2b;
+    --coral-soft:#fdece2;
+    --radius:18px;
+    --radius-sm:12px;
+    --shadow: 0 1px 2px rgba(21,38,33,0.04), 0 8px 24px -12px rgba(21,38,33,0.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 90% -10%, rgba(242,163,61,0.10), transparent 60%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    padding-bottom:96px;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  a,button{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:sticky; top:0; z-index:40;
+    background:rgba(241,246,242,0.85);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    padding:14px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .brand .mark{
+    width:34px; height:34px; border-radius:9px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--gold), var(--coral));
+    position:relative;
+  }
+  .brand .mark::after{
+    content:""; position:absolute; inset:7px; border-radius:50%;
+    background:var(--card);
+  }
+  .brand-text{display:flex; flex-direction:column; line-height:1.1; min-width:0;}
+  .brand-text b{font-size:1rem; font-weight:700; white-space:nowrap;}
+  .brand-text span{font-size:0.68rem; color:var(--muted); font-weight:600; letter-spacing:0.06em; text-transform:uppercase;}
+
+  .btn-print{
+    background:var(--ink); color:var(--paper); border:none;
+    padding:10px 16px; border-radius:99px; font-size:0.8rem; font-weight:600;
+    cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap;
+    transition:transform .15s ease;
+  }
+  .btn-print:hover{transform:translateY(-1px);}
+  .btn-print svg{width:14px; height:14px;}
+
+  /* ---------- LAYOUT ---------- */
+  .layout{
+    max-width:1180px; margin:24px auto; padding:0 16px;
+    display:grid; grid-template-columns: 320px 1fr; gap:20px; align-items:start;
+  }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px; box-shadow:var(--shadow);
+  }
+  .card + .card{margin-top:16px;}
+
+  /* ---------- TABS (mobile input switcher) ---------- */
+  .tabbar{
+    display:none;
+    gap:6px; background:var(--card); border:1px solid var(--line);
+    border-radius:99px; padding:4px; margin-bottom:14px;
+    position:sticky; top:66px; z-index:30; box-shadow:var(--shadow);
+  }
+  .tabbar button{
+    flex:1; border:none; background:transparent; padding:9px 6px;
+    border-radius:99px; font-size:0.78rem; font-weight:600; color:var(--muted);
+    cursor:pointer; transition:all .15s ease;
+  }
+  .tabbar button.active{background:var(--ink); color:var(--paper);}
+
+  .panel-section{display:block;}
+
+  .section-title{
+    font-size:0.72rem; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:0.07em;
+    display:flex; align-items:center; gap:8px; margin-bottom:16px;
+  }
+  .section-title .dot{width:7px; height:7px; border-radius:50%; background:var(--gold);}
+
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:0.72rem; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:0.04em; margin-bottom:7px;
+  }
+  .field label .live{color:var(--ink); font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.78rem; text-transform:none; letter-spacing:0;}
+
+  select, input[type="number"]{
+    width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:var(--radius-sm);
+    font-size:0.88rem; font-weight:500; color:var(--ink); background:#fbfdfc;
+    outline:none; appearance:none; transition:border-color .15s ease;
+    font-family:'Inter',sans-serif;
+  }
+  select{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235f6f6a'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center; padding-right:32px;
+  }
+  select:focus, input:focus{border-color:var(--teal); background:#fff;}
+
+  input[type="range"]{
+    -webkit-appearance:none; width:100%; height:6px; border-radius:99px;
+    background:linear-gradient(90deg, var(--gold) 0%, var(--gold) var(--fill,50%), var(--line) var(--fill,50%));
+    margin-top:4px;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+    background:var(--card); border:3px solid var(--gold); cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.18);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; background:var(--card);
+    border:3px solid var(--gold); cursor:pointer;
+  }
+
+  /* ---------- HERO / SIGNATURE ---------- */
+  .hero{
+    padding:0; overflow:hidden; position:relative;
+  }
+  .hero-top{
+    padding:22px 22px 0 22px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;
+  }
+  .hero-eyebrow{font-size:0.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.07em;}
+  .hero-title{font-size:1.5rem; font-weight:700; margin-top:3px;}
+  .hero-sub{font-size:0.83rem; color:var(--muted); margin-top:3px;}
+  .pr-chip{
+    background:var(--teal-soft); color:var(--teal); font-weight:700; font-size:0.78rem;
+    padding:6px 14px; border-radius:99px; white-space:nowrap; font-family:'IBM Plex Mono',monospace;
+  }
+  .roof-wrap{padding:6px 6px 4px 6px;}
+  .roof-caption{
+    display:flex; justify-content:space-between; align-items:center; padding:2px 26px 18px 26px;
+    font-size:0.72rem; color:var(--muted); font-weight:600;
+  }
+  .roof-caption .slots{font-family:'IBM Plex Mono',monospace; color:var(--ink); font-weight:700;}
+  .roof-overflow{
+    display:none; margin:0 22px 18px 22px; padding:10px 14px; border-radius:var(--radius-sm);
+    background:var(--coral-soft); color:var(--coral); font-size:0.76rem; font-weight:700;
+  }
+  .roof-overflow.show{display:block;}
+
+  @keyframes panelPop{
+    0%{ opacity:0; transform:scale(0.35) rotate(-2deg); }
+    65%{ opacity:1; transform:scale(1.1) rotate(0.5deg); }
+    100%{ opacity:1; transform:scale(1) rotate(0deg); }
+  }
+  .panel-cell{ transform-box:fill-box; transform-origin:center; }
+  .panel-cell.pop{ animation:panelPop 460ms cubic-bezier(.34,1.56,.64,1) both; }
+  @media (prefers-reduced-motion: reduce){
+    .panel-cell.pop{ animation:none; }
+  }
+
+  /* ---------- METRICS GRID ---------- */
+  .metrics-grid{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin:16px 0;
+  }
+  .metric{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px; box-shadow:var(--shadow);
+  }
+  .metric.featured{background:var(--gold-soft); border-color:#f3d9ab;}
+  .metric .mlabel{font-size:0.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;}
+  .metric .mval{font-size:1.5rem; font-weight:700; margin:5px 0 2px 0; font-family:'Space Grotesk',sans-serif;}
+  .metric .msub{font-size:0.78rem; color:var(--muted); font-weight:500; font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- TABLE ---------- */
+  .table-scroll{overflow-x:auto; margin:0 -4px; -webkit-overflow-scrolling:touch;}
+  table{width:100%; border-collapse:collapse; font-size:0.84rem; min-width:560px;}
+  th, td{padding:12px 12px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap;}
+  th{
+    font-size:0.68rem; text-transform:uppercase; color:var(--muted); font-weight:700;
+    letter-spacing:0.05em; position:sticky; top:0; background:var(--card);
+  }
+  td{font-weight:500;}
+  td.mono, th ~ th{font-family:'IBM Plex Mono',monospace;}
+  tr:last-child td{font-weight:700; background:var(--teal-soft);}
+  tr:last-child td:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm);}
+
+  .specs-table td{border-bottom:1px solid var(--line);}
+  .specs-table tr:last-child td{background:transparent; font-weight:500;}
+  .specs-table td:first-child{color:var(--muted); font-weight:600; width:46%;}
+  .specs-table td:last-child{font-family:'IBM Plex Mono',monospace; font-size:0.82rem;}
+
+  /* ---------- NOTES ---------- */
+  .notes-list{list-style:none;}
+  .notes-list li{
+    position:relative; padding-left:22px; margin-bottom:12px; font-size:0.85rem; color:var(--muted);
+  }
+  .notes-list li:last-child{margin-bottom:0;}
+  .notes-list li::before{
+    content:""; position:absolute; left:0; top:6px; width:7px; height:7px;
+    border-radius:50%; background:var(--coral);
+  }
+  .notes-list b{color:var(--ink);}
+
+  /* ---------- MOBILE STICKY SUMMARY BAR ---------- */
+  .sticky-bar{
+    display:none; position:fixed; left:12px; right:12px; bottom:12px; z-index:50;
+    background:var(--ink); color:var(--paper); border-radius:99px;
+    padding:12px 8px 12px 20px; align-items:center; justify-content:space-between;
+    box-shadow:0 10px 30px -8px rgba(0,0,0,0.35);
+  }
+  .sticky-bar .sb-item{display:flex; flex-direction:column; line-height:1.15;}
+  .sticky-bar .sb-item span{font-size:0.62rem; text-transform:uppercase; letter-spacing:0.06em; opacity:0.6; font-weight:600;}
+  .sticky-bar .sb-item b{font-size:0.98rem; font-family:'Space Grotesk',sans-serif;}
+  .sticky-bar .sb-cta{
+    background:var(--gold); color:var(--ink); border:none; border-radius:99px;
+    padding:9px 16px; font-weight:700; font-size:0.78rem; cursor:pointer; white-space:nowrap;
+  }
+
+  @media (max-width: 900px){
+    .layout{grid-template-columns:1fr; margin:16px auto;}
+    .tabbar{display:flex;}
+    .panel-section{display:none;}
+    .panel-section.active{display:block;}
+    .metrics-grid{grid-template-columns:repeat(2, 1fr);}
+    .sticky-bar{display:flex;}
+    body{padding-bottom:104px;}
+    .hero-title{font-size:1.25rem;}
+  }
+  @media (max-width:520px){
+    .metrics-grid{grid-template-columns:1fr 1fr;}
+    header{padding:12px 14px;}
+  }
+
+  @media print{
+    body{background:#fff; padding-bottom:0;}
+    header, .btn-print, .tabbar, .sticky-bar{display:none;}
+    .layout{grid-template-columns:1fr; display:block; margin:0; padding:0;}
+    .card{box-shadow:none; border:none; border-bottom:1px solid var(--line); border-radius:0; padding:14px 0; margin-top:0;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark"></div>
+    <div class="brand-text">
+      <b>Solar Pulse PH</b>
+      <span>Sizing &amp; Yield Report</span>
+    </div>
+  </div>
+  <button class="btn-print" onclick="window.print()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+    Print proposal
+  </button>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: INPUTS -->
+  <aside>
+    <div class="tabbar" role="tablist">
+      <button type="button" class="active" data-tab="tab-array">Array</button>
+      <button type="button" data-tab="tab-roof">Roof</button>
+      <button type="button" data-tab="tab-battery">Battery</button>
+    </div>
+
+    <div class="card panel-section active" id="tab-array">
+      <div class="section-title"><span class="dot"></span>Solar Capacity &amp; Panels</div>
+
+      <div class="field">
+        <label>Target capacity <span class="live" id="kwpVal">5.0 kWp</span></label>
+        <input type="range" id="kwp" min="1" max="50" step="0.5" value="5" oninput="onSlider(this); calculate()">
+      </div>
+
+      <div class="field">
+        <label>Panel rating</label>
+        <select id="panelWatt" onchange="calculate()">
+          <option value="550">550W N-Type Mono (Standard PH choice)</option>
+          <option value="600">600W High Yield Commercial Module</option>
+          <option value="450">450W Compact Residential Module</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Location / PSH</label>
+        <select id="region" onchange="calculate()">
+          <option value="4.5">Luzon (4.5 peak sun hours)</option>
+          <option value="4.8">Visayas (4.8 peak sun hours)</option>
+          <option value="5.1">Mindanao (5.1 peak sun hours)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Utility rate (₱ / kWh)</label>
+        <input type="number" id="rate" value="14.78" step="0.01" oninput="calculate()">
+      </div>
+    </div>
+
+    <div class="card panel-section" id="tab-roof">
+      <div class="section-title"><span class="dot" style="background:var(--coral);"></span>Roof &amp; Conditions</div>
+
+      <div class="field">
+        <label>Roof material</label>
+        <select id="roofType" onchange="calculate()">
+          <option value="0.95">Galvanized metal / corrugated sheet</option>
+          <option value="0.92">Concrete slab deck</option>
+          <option value="0.90">Asphalt / ceramic tile</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Orientation &amp; tilt</label>
+        <select id="roofDir" onchange="calculate()">
+          <option value="1.00">South-facing (optimal 10°–15°)</option>
+          <option value="0.90">East / west-facing (10% loss)</option>
+          <option value="0.85">Flat roof / non-tilted</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Shading factor</label>
+        <select id="shading" onchange="calculate()">
+          <option value="1.00">Unobstructed (0% shading loss)</option>
+          <option value="0.90">Minor shading (10% loss)</option>
+          <option value="0.80">Moderate shading (20% loss)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card panel-section" id="tab-battery">
+      <div class="section-title"><span class="dot" style="background:var(--teal);"></span>Battery Storage</div>
+
+      <div class="field">
+        <label>Night essential load (kWh)</label>
+        <input type="number" id="nightLoad" value="10" step="0.5" oninput="calculate()">
+      </div>
+
+      <div class="field">
+        <label>Battery technology</label>
+        <select id="dod" onchange="calculate()">
+          <option value="0.8">LiFePO4 lithium (80% depth of discharge)</option>
+          <option value="0.5">Lead-acid / gel (50% depth of discharge)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Autonomy backup</label>
+        <select id="autonomy" onchange="calculate()">
+          <option value="1">1 day standard backup</option>
+          <option value="2">2 days typhoon / rainy backup</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT: REPORT -->
+  <main>
+
+    <!-- HERO: signature sun-arc generation curve -->
+    <div class="card hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-eyebrow">Required hardware configuration</div>
+          <div class="hero-title" id="panelCountDisplay">10 panels (550W)</div>
+          <div class="hero-sub" id="roofAreaDisplay">Est. roof area needed: ~26 m²</div>
+        </div>
+        <span class="pr-chip" id="systemEfficiencyTag">PR 78%</span>
+      </div>
+      <div class="roof-wrap">
+        <svg id="roofScene" viewBox="0 0 640 300" width="100%" height="auto" style="display:block;">
+          <defs>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fdf1de"/>
+              <stop offset="100%" stop-color="#f1f6f2"/>
+            </linearGradient>
+            <linearGradient id="panelGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2a4a55"/>
+              <stop offset="100%" stop-color="#173039"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="640" height="300" fill="url(#skyGrad)"/>
+          <!-- sun -->
+          <circle cx="572" cy="46" r="16" fill="#f2a33d" opacity="0.85"/>
+          <g stroke="#f2a33d" stroke-width="2" opacity="0.5" stroke-linecap="round">
+            <line x1="572" y1="14" x2="572" y2="4"/>
+            <line x1="600" y1="46" x2="610" y2="46"/>
+            <line x1="592" y1="26" x2="599" y2="19"/>
+            <line x1="592" y1="66" x2="599" y2="73"/>
+          </g>
+          <!-- ground -->
+          <rect x="0" y="272" width="640" height="28" fill="#e6f3ee"/>
+          <!-- gable end shading for depth -->
+          <polygon points="130,170 160,170 130,90" fill="#152621" opacity="0.06"/>
+          <!-- roof slope (panel plane) -->
+          <polygon id="roofPlane" points="160,170 520,170 490,90 130,90" fill="#cfdcd6" stroke="#152621" stroke-opacity="0.35" stroke-width="1.5"/>
+          <!-- ridge cap -->
+          <line x1="130" y1="90" x2="490" y2="90" stroke="#152621" stroke-opacity="0.4" stroke-width="3" stroke-linecap="round"/>
+          <!-- panel grid injected here -->
+          <g id="panelGrid"></g>
+          <!-- house wall -->
+          <rect x="160" y="170" width="360" height="102" fill="#ffffff" stroke="#152621" stroke-opacity="0.3" stroke-width="1.5"/>
+          <!-- windows -->
+          <rect x="192" y="196" width="46" height="46" rx="4" fill="#e6f3ee" stroke="#152621" stroke-opacity="0.3"/>
+          <line x1="215" y1="196" x2="215" y2="242" stroke="#152621" stroke-opacity="0.25"/>
+          <line x1="192" y1="219" x2="238" y2="219" stroke="#152621" stroke-opacity="0.25"/>
+          <rect x="442" y="196" width="46" height="46" rx="4" fill="#e6f3ee" stroke="#152621" stroke-opacity="0.3"/>
+          <line x1="465" y1="196" x2="465" y2="242" stroke="#152621" stroke-opacity="0.25"/>
+          <line x1="442" y1="219" x2="488" y2="219" stroke="#152621" stroke-opacity="0.25"/>
+          <!-- door -->
+          <rect x="323" y="212" width="34" height="60" rx="3" fill="#f2a33d" opacity="0.18" stroke="#152621" stroke-opacity="0.3"/>
+          <circle cx="351" cy="243" r="1.6" fill="#152621" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="roof-caption">
+        <span>Roof panel layout</span>
+        <span class="slots" id="roofSlotsLabel">0 / 0 slots filled</span>
+      </div>
+      <div class="roof-overflow" id="roofOverflow"></div>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric featured">
+        <div class="mlabel">Daily generation</div>
+        <div class="mval" id="dailyYield">0 kWh</div>
+        <div class="msub" id="dailySavings">₱0 / day</div>
+      </div>
+      <div class="metric">
+        <div class="mlabel">Monthly generation</div>
+        <div class="mval" id="monthlyYield">0 kWh</div>
+        <div class="msub" id="monthlySavings">₱0 / mo</div>
+      </div>
+      <div class="metric featured">
+        <div class="mlabel">Annual generation</div>
+        <div class="mval" id="annualYield">0 kWh</div>
+        <div class="msub" id="annualSavings">₱0 / yr</div>
+      </div>
+      <div class="metric">
+        <div class="mlabel">Battery system size</div>
+        <div class="mval" id="batteryKwh">0 kWh</div>
+        <div class="msub" id="batteryAh">0 Ah @ 48V</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span class="dot"></span>Daily, Weekly, Monthly &amp; Annual Potential</div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Time horizon</th><th>Solar yield</th><th>Est. savings</th><th>CO₂ reduction</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Daily average</strong></td><td class="mono" id="tDailyKwh">-</td><td class="mono" id="tDailyPhp">-</td><td class="mono" id="tDailyCo2">-</td></tr>
+            <tr><td><strong>Weekly average</strong></td><td class="mono" id="tWeeklyKwh">-</td><td class="mono" id="tWeeklyPhp">-</td><td class="mono" id="tWeeklyCo2">-</td></tr>
+            <tr><td><strong>Monthly average</strong></td><td class="mono" id="tMonthlyKwh">-</td><td class="mono" id="tMonthlyPhp">-</td><td class="mono" id="tMonthlyCo2">-</td></tr>
+            <tr><td><strong>Dry season month (April peak)</strong></td><td class="mono" id="tDryKwh">-</td><td class="mono" id="tDryPhp">-</td><td class="mono" id="tDryCo2">-</td></tr>
+            <tr><td><strong>Wet season month (monsoon)</strong></td><td class="mono" id="tWetKwh">-</td><td class="mono" id="tWetPhp">-</td><td class="mono" id="tWetCo2">-</td></tr>
+            <tr><td><strong>Annual cumulative total</strong></td><td class="mono" id="tAnnualKwh">-</td><td class="mono" id="tAnnualPhp">-</td><td class="mono" id="tAnnualCo2">-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span class="dot"></span>Technical &amp; System Specifications</div>
+      <table class="specs-table">
+        <tbody>
+          <tr><td>Solar panel setup</td><td id="specPanels">-</td></tr>
+          <tr><td>Estimated roof space required</td><td id="specRoofArea">-</td></tr>
+          <tr><td>Combined system performance ratio (PR)</td><td id="specPR">-</td></tr>
+          <tr><td>Usable battery storage needed</td><td id="specUsableBattery">-</td></tr>
+          <tr><td>Total recommended rated battery capacity</td><td id="specTotalBattery">-</td></tr>
+          <tr><td>Continuous backup autonomy</td><td id="specAutonomyHrs">-</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span class="dot" style="background:var(--coral);"></span>System &amp; Environmental Notes</div>
+      <ul class="notes-list">
+        <li><b>Peak Sun Hours (PSH):</b> regional PSH values are derived from historical Philippine meteorological irradiation averages (Luzon ~4.5 hrs, Visayas ~4.8 hrs, Mindanao ~5.1 hrs).</li>
+        <li><b>Ambient thermal derating:</b> panel performance deratings account for high ambient roof temperatures common in tropical environments, reducing efficiency relative to standard test conditions (STC).</li>
+        <li><b>Battery usable vs. nominal:</b> required total battery capacity accounts for maximum depth of discharge (DoD) thresholds to preserve battery operational lifespan (80% for LiFePO4, 50% for lead-acid).</li>
+        <li><b>Grid CO₂ emissions offset:</b> environmental calculations assume a Philippine grid emission factor of approximately 0.70 kg CO₂ per kWh avoided.</li>
+        <li><b>Grid tie &amp; net metering:</b> yield projections assume optimal load matching or net metering integration with local utility distributors for excess generation export.</li>
+      </ul>
+    </div>
+
+  </main>
+</div>
+
+<!-- MOBILE STICKY SUMMARY -->
+<div class="sticky-bar">
+  <div class="sb-item"><span>Daily yield</span><b id="sbDaily">0 kWh</b></div>
+  <div class="sb-item"><span>Monthly savings</span><b id="sbSavings">₱0</b></div>
+  <button class="sb-cta" onclick="document.querySelector('.metrics-grid').scrollIntoView({behavior:'smooth', block:'start'})">View report</button>
+</div>
+
+<script>
+  // ---------- Tab switching (mobile input sections) ----------
+  document.querySelectorAll('.tabbar button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.panel-section').forEach(s=>s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  function onSlider(el){
+    document.getElementById('kwpVal').innerText = parseFloat(el.value).toFixed(1) + ' kWp';
+    const min = parseFloat(el.min), max = parseFloat(el.max);
+    const pct = ((el.value - min) / (max - min)) * 100;
+    el.style.setProperty('--fill', pct + '%');
+  }
+
+  // ---------- Animated roof panel layout (signature visual) ----------
+  // Maps a grid of solar panels onto the roof's parallelogram plane (an affine
+  // map from grid coords (u,v) to screen space), fills slots row-by-row from
+  // the eave upward as panelCount grows, and pops newly-added panels in with
+  // a staggered scale/opacity animation. Previous count is tracked so only
+  // the *new* panels animate on re-render, not the whole grid.
+  const ROOF = {
+    // eave (bottom) corners and ridge (top) corners of the visible roof slope,
+    // matching the polygon drawn in the SVG markup.
+    eaveL:{x:160,y:170}, eaveR:{x:520,y:170},
+    ridgeL:{x:130,y:90}, ridgeR:{x:490,y:90},
+    cols:8, rows:4 // grid capacity = 32 visual slots
+  };
+  let prevPanelCount = -1;
+
+  function roofPoint(u, v){
+    // right vector = along the eave; up vector = eave -> ridge
+    const rx = (ROOF.eaveR.x - ROOF.eaveL.x) / ROOF.cols;
+    const ry = (ROOF.eaveR.y - ROOF.eaveL.y) / ROOF.cols;
+    const ux = (ROOF.ridgeL.x - ROOF.eaveL.x) / ROOF.rows;
+    const uy = (ROOF.ridgeL.y - ROOF.eaveL.y) / ROOF.rows;
+    return { x: ROOF.eaveL.x + u*rx + v*ux, y: ROOF.eaveL.y + u*ry + v*uy };
+  }
+
+  function renderRoof(panelCount){
+    const grid = document.getElementById('panelGrid');
+    const capacity = ROOF.cols * ROOF.rows;
+    const filled = Math.min(panelCount, capacity);
+    const margin = 0.09; // gap between panels
+
+    let html = '';
+    for(let idx=0; idx<capacity; idx++){
+      const row = Math.floor(idx / ROOF.cols);   // 0 = bottom row (near eave)
+      const col = idx % ROOF.cols;
+      const u0 = col + margin, u1 = col + 1 - margin;
+      const v0 = row + margin, v1 = row + 1 - margin;
+      const p1 = roofPoint(u0,v0), p2 = roofPoint(u1,v0), p3 = roofPoint(u1,v1), p4 = roofPoint(u0,v1);
+      const pts = [p1,p2,p3,p4].map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+      const cx = ((p1.x+p2.x+p3.x+p4.x)/4).toFixed(1);
+      const cy = ((p1.y+p2.y+p3.y+p4.y)/4).toFixed(1);
+
+      const isFilled = idx < filled;
+      const isNew = isFilled && idx >= prevPanelCount;
+      const delay = isNew ? Math.max(0, idx - Math.max(prevPanelCount,0)) * 35 : 0;
+
+      if(isFilled){
+        html += `<g class="panel-cell${isNew ? ' pop':''}" style="transform-origin:${cx}px ${cy}px; animation-delay:${delay}ms;">
+          <polygon points="${pts}" fill="url(#panelGrad)" stroke="#0e2126" stroke-width="1"/>
+          <line x1="${((p1.x+p2.x)/2).toFixed(1)}" y1="${((p1.y+p2.y)/2).toFixed(1)}" x2="${((p4.x+p3.x)/2).toFixed(1)}" y2="${((p4.y+p3.y)/2).toFixed(1)}" stroke="#f2a33d" stroke-opacity="0.25" stroke-width="1"/>
+          <line x1="${((p1.x+p4.x)/2).toFixed(1)}" y1="${((p1.y+p4.y)/2).toFixed(1)}" x2="${((p2.x+p3.x)/2).toFixed(1)}" y2="${((p2.y+p3.y)/2).toFixed(1)}" stroke="#f2a33d" stroke-opacity="0.25" stroke-width="1"/>
+        </g>`;
+      } else {
+        html += `<polygon points="${pts}" fill="none" stroke="#152621" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="3,3"/>`;
+      }
+    }
+    grid.innerHTML = html;
+    prevPanelCount = filled;
+
+    document.getElementById('roofSlotsLabel').innerText = filled + ' / ' + capacity + ' slots filled';
+    const overflowEl = document.getElementById('roofOverflow');
+    if(panelCount > capacity){
+      overflowEl.classList.add('show');
+      overflowEl.innerText = '+' + (panelCount - capacity) + ' more panels needed — extra roof section or ground mount recommended';
+    } else {
+      overflowEl.classList.remove('show');
+    }
+  }
+
+  function calculate() {
+    const kwp = parseFloat(document.getElementById('kwp').value);
+    const panelWatt = parseFloat(document.getElementById('panelWatt').value);
+    const psh = parseFloat(document.getElementById('region').value);
+    const rate = parseFloat(document.getElementById('rate').value);
+
+    const roofHeat = parseFloat(document.getElementById('roofType').value);
+    const roofDir = parseFloat(document.getElementById('roofDir').value);
+    const shading = parseFloat(document.getElementById('shading').value);
+
+    const nightLoad = parseFloat(document.getElementById('nightLoad').value);
+    const dod = parseFloat(document.getElementById('dod').value);
+    const autonomy = parseFloat(document.getElementById('autonomy').value);
+
+    // 1. Hardware
+    const totalWattsNeeded = kwp * 1000;
+    const panelCount = Math.ceil(totalWattsNeeded / panelWatt);
+    const estRoofArea = (panelCount * 2.6).toFixed(0);
+
+    document.getElementById('panelCountDisplay').innerText = panelCount + ' panels (' + panelWatt + 'W)';
+    document.getElementById('roofAreaDisplay').innerText = 'Est. roof area needed: ~' + estRoofArea + ' m²';
+
+    // 2. Performance & yield
+    const basePR = 0.80;
+    const combinedPR = basePR * roofHeat * roofDir * shading;
+    document.getElementById('systemEfficiencyTag').innerText = 'PR ' + (combinedPR * 100).toFixed(0) + '%';
+
+    const dailyKwh = kwp * psh * combinedPR;
+    const weeklyKwh = dailyKwh * 7;
+    const monthlyAvgKwh = dailyKwh * 30;
+    const dryMonthKwh = monthlyAvgKwh * 1.20;
+    const wetMonthKwh = monthlyAvgKwh * 0.80;
+    const annualKwh = dailyKwh * 365;
+
+    const dailyPhp = dailyKwh * rate;
+    const weeklyPhp = weeklyKwh * rate;
+    const monthlyPhp = monthlyAvgKwh * rate;
+    const dryPhp = dryMonthKwh * rate;
+    const wetPhp = wetMonthKwh * rate;
+    const annualPhp = annualKwh * rate;
+
+    const co2Factor = 0.7;
+
+    document.getElementById('dailyYield').innerText = dailyKwh.toFixed(1) + ' kWh';
+    document.getElementById('dailySavings').innerText = '₱' + dailyPhp.toFixed(2) + ' / day';
+
+    document.getElementById('monthlyYield').innerText = monthlyAvgKwh.toFixed(0) + ' kWh';
+    document.getElementById('monthlySavings').innerText = '₱' + monthlyPhp.toLocaleString('en-US', {maximumFractionDigits:0}) + ' / mo';
+
+    document.getElementById('annualYield').innerText = annualKwh.toLocaleString('en-US', {maximumFractionDigits:0}) + ' kWh';
+    document.getElementById('annualSavings').innerText = '₱' + annualPhp.toLocaleString('en-US', {maximumFractionDigits:0}) + ' / yr';
+
+    document.getElementById('tDailyKwh').innerText = dailyKwh.toFixed(2) + ' kWh';
+    document.getElementById('tDailyPhp').innerText = '₱' + dailyPhp.toFixed(2);
+    document.getElementById('tDailyCo2').innerText = (dailyKwh * co2Factor).toFixed(1) + ' kg';
+
+    document.getElementById('tWeeklyKwh').innerText = weeklyKwh.toFixed(2) + ' kWh';
+    document.getElementById('tWeeklyPhp').innerText = '₱' + weeklyPhp.toFixed(2);
+    document.getElementById('tWeeklyCo2').innerText = (weeklyKwh * co2Factor).toFixed(1) + ' kg';
+
+    document.getElementById('tMonthlyKwh').innerText = monthlyAvgKwh.toFixed(1) + ' kWh';
+    document.getElementById('tMonthlyPhp').innerText = '₱' + monthlyPhp.toLocaleString('en-US', {maximumFractionDigits:2});
+    document.getElementById('tMonthlyCo2').innerText = (monthlyAvgKwh * co2Factor).toFixed(1) + ' kg';
+
+    document.getElementById('tDryKwh').innerText = dryMonthKwh.toFixed(1) + ' kWh';
+    document.getElementById('tDryPhp').innerText = '₱' + dryPhp.toLocaleString('en-US', {maximumFractionDigits:2});
+    document.getElementById('tDryCo2').innerText = (dryMonthKwh * co2Factor).toFixed(1) + ' kg';
+
+    document.getElementById('tWetKwh').innerText = wetMonthKwh.toFixed(1) + ' kWh';
+    document.getElementById('tWetPhp').innerText = '₱' + wetPhp.toLocaleString('en-US', {maximumFractionDigits:2});
+    document.getElementById('tWetCo2').innerText = (wetMonthKwh * co2Factor).toFixed(1) + ' kg';
+
+    document.getElementById('tAnnualKwh').innerText = annualKwh.toLocaleString('en-US', {maximumFractionDigits:0}) + ' kWh';
+    document.getElementById('tAnnualPhp').innerText = '₱' + annualPhp.toLocaleString('en-US', {maximumFractionDigits:2});
+    document.getElementById('tAnnualCo2').innerText = (annualKwh * co2Factor / 1000).toFixed(2) + ' Tons';
+
+    // Battery
+    const usableBatteryKwh = nightLoad * autonomy;
+    const totalBatteryKwh = usableBatteryKwh / dod;
+    const batteryAh = (totalBatteryKwh * 1000) / 48;
+
+    document.getElementById('batteryKwh').innerText = totalBatteryKwh.toFixed(1) + ' kWh';
+    document.getElementById('batteryAh').innerText = batteryAh.toFixed(0) + ' Ah @ 48V';
+
+    // Specs
+    document.getElementById('specPanels').innerText = panelCount + ' units × ' + panelWatt + 'W modules (' + kwp + ' kWp array)';
+    document.getElementById('specRoofArea').innerText = '~' + estRoofArea + ' m² (corrugated or flat mounting space)';
+    document.getElementById('specPR').innerText = (combinedPR * 100).toFixed(1) + '% (derated for local heat, tilt & shading)';
+    document.getElementById('specUsableBattery').innerText = usableBatteryKwh.toFixed(1) + ' kWh usable night energy';
+    document.getElementById('specTotalBattery').innerText = totalBatteryKwh.toFixed(1) + ' kWh (' + batteryAh.toFixed(0) + ' Ah @ 48V nominal)';
+    document.getElementById('specAutonomyHrs').innerText = (autonomy * 24) + ' hours continuous backup window';
+
+    // Mobile sticky bar
+    document.getElementById('sbDaily').innerText = dailyKwh.toFixed(1) + ' kWh';
+    document.getElementById('sbSavings').innerText = '₱' + monthlyPhp.toLocaleString('en-US', {maximumFractionDigits:0});
+
+    // Signature visual: animated panels laid onto the roof
+    renderRoof(panelCount);
+  }
+
+  // init slider fill + first render
+  onSlider(document.getElementById('kwp'));
+  calculate();
+</script>
+</body>
+</html>
